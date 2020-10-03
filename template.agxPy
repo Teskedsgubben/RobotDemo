@@ -1,0 +1,394 @@
+'''
+
+This script is a startup template for scripting with the AGX Dynamics Python API
+
+'''
+import os
+import time
+try:
+    import agx
+except:
+    os.system("\"C:\Program Files\Algoryx\AGX-2.29.2.0\setup_env.bat\"")
+    time.sleep(5)
+    import agx
+
+import agxCollide
+import agxOSG
+import agxSDK
+import agxPython
+import agxIO
+import agxModel
+import agxRender
+
+import sys
+import math
+import numpy as np
+
+import src.Components
+
+from tutorials.tutorial_utils import createHelpText
+
+
+# Create a class that is triggered at various steps in the simulation
+class FollowCam(agxSDK.StepEventListener):
+    def __init__(self, app, object_to_follow, distance=9, angle=25):
+        super().__init__(agxSDK.StepEventListener.PRE_COLLIDE+agxSDK.StepEventListener.PRE_STEP+agxSDK.StepEventListener.POST_STEP)
+        self.app = app
+        self.body = object_to_follow
+        self.dist = distance
+        self.angl = np.deg2rad(angle)
+        self.camData = app.getCameraData()
+
+    def preCollide(self, time):
+        return
+        # print("preCollide")
+
+    def pre(self, time):
+        looker = self.body.getPosition()
+        position = -self.body.getVelocity()
+        position.setLength(self.dist)
+        position.set(position.x()*np.cos(self.angl), position.y()*np.cos(self.angl), self.dist*np.sin(self.angl))
+        position = position + looker
+        
+        cameraData                   = self.app.getCameraData()
+        cameraData.eye               = position
+        cameraData.center            = looker
+        cameraData.up                = agx.Vec3( 0, 0, 1 )
+        cameraData.nearClippingPlane = 0.1
+        cameraData.farClippingPlane  = 5000
+        self.app.applyCameraData( cameraData )
+        return
+        # print("pre")
+
+    def post(self, time):
+        return
+        # print("post")
+
+# Controls wheel torque from arrow key inputs. Supports 2 or 4 wheel drive.
+# Wheels to be controlled must come as a list of [left, right, left, right]
+class WheelController(agxSDK.GuiEventListener):
+    '''Wheels must be in a list and in pairs L & R, i.e. [wheel_left, wheel_right]'''
+    def __init__(self, wheels):
+        super().__init__(agxSDK.GuiEventListener.KEYBOARD)
+        self.wheels = wheels
+        self.strength = 4
+        self.root = agxPython.getContext().environment.getSceneRoot()
+        app = agxPython.getContext().environment.getApplication()
+
+    # Steering function
+    def keyboard(self, key, x, y, alt, keydown):
+        if keydown and key == agxSDK.GuiEventListener.KEY_Left:
+            # Turn left
+            for i in range(0, len(self.wheels), 2):
+                self.wheels[i+1].addLocalTorque(0, self.strength,0)
+                self.wheels[i].addLocalTorque(0, -self.strength/4,0)
+
+        elif keydown and key == agxSDK.GuiEventListener.KEY_Right:
+            # Turn right
+            for i in range(0, len(self.wheels), 2):
+                self.wheels[i].addLocalTorque(0, self.strength,0)
+                self.wheels[i+1].addLocalTorque(0, -self.strength/4,0)
+
+        elif keydown and key == agxSDK.GuiEventListener.KEY_Down:
+            # Back up
+            for wheel in self.wheels:
+                wheel.addLocalTorque(0,-self.strength/2,0)
+
+        elif keydown and key == agxSDK.GuiEventListener.KEY_Up:
+            # Gain speed
+            for wheel in self.wheels:
+                wheel.addLocalTorque(0, self.strength,0)
+        else:
+            return False
+        return True
+
+#
+# "main" def that creates the scene
+#
+def buildScene():
+
+    sim = agxPython.getContext().environment.getSimulation()
+    app = agxPython.getContext().environment.getApplication()
+    root = agxPython.getContext().environment.getSceneRoot()
+
+    # body1 = src.Components.MC095()
+    # sim.add(body1)
+    # # Create a visual representation
+    # agxOSG.setDiffuseColor(agxOSG.createVisual(body1, root), agxRender.Color.Red())
+    # # Create a constraint
+    # f1 = agx.Frame()
+    # spring = agx.DistanceJoint(body1, f1, agx.Vec3())
+    # spring.setCompliance(1E-3)
+    # # Add the constraint to the simulation
+    # sim.add(spring)
+
+    
+    buildArena(sim,root)
+    botBody = buildBot(sim, root)
+    
+
+    
+
+    # Setup the initial camera pose. (Can be retrieved using the 'C' button)
+    cameraData                   = app.getCameraData()
+    cameraData.eye               = agx.Vec3( 5.2862330534244251E-01, -3.3026565127091070E+00, 3.6781431908061329E-01 )
+    cameraData.center            = agx.Vec3( -1.0658614570274949E-02, -3.7949085235595703E-03, -3.8335944223217666E-01 )
+    cameraData.up                = agx.Vec3( -4.6478274679073110E-02, 2.1455414637230918E-01, 9.7560560077180092E-01 )
+    cameraData.nearClippingPlane = 0.1
+    cameraData.farClippingPlane  = 5000
+    app.applyCameraData( cameraData )
+
+    # Add my listner to the simulation
+    sim.add(FollowCam(app, botBody))
+    # sim.add(MyGuiListener())
+
+    # createHelpText(sim, app)
+
+def main(args):
+
+    ## Create an application with graphics etc.
+    app = agxOSG.ExampleApplication()
+
+    ## Create a command line parser. sys.executable will point to python executable
+    ## in this case, because getArgumentName(0) needs to match the C argv[0] which
+    ## is the name of the program running
+    argParser = agxIO.ArgumentParser([sys.executable] + args)
+
+    app.addScene(argParser.getArgumentName(1), "buildScene", ord('1'), True)
+
+    ## Call the init method of ExampleApplication
+    ## It will setup the viewer, windows etc.
+    if app.init(argParser):
+        app.run()
+    else:
+        print("An error occurred while initializing ExampleApplication.")
+
+
+## Entry point when this script is loaded with python
+if agxPython.getContext() == None:
+    init = agx.AutoInit()
+    main(sys.argv)
+
+def buildArena(sim, root):
+    arena_size = [8,8,0.2]
+    arena_pos = [0,0,-1]
+    h = 0.7
+
+    floor = agx.RigidBody( agxCollide.Geometry( agxCollide.Box(arena_size[0]/2, arena_size[1]/2, arena_size[2]/2)))
+    floor.setPosition(arena_pos[0], arena_pos[1], arena_pos[2]-arena_size[2]/2)
+    floor.setMotionControl(1)
+    sim.add(floor)
+    agxOSG.setDiffuseColor(agxOSG.createVisual(floor, root), agxRender.Color.Gray())
+
+    wall = agx.RigidBody( agxCollide.Geometry( agxCollide.Box(arena_size[0]/2, arena_size[2]/2, h/2)))
+    wall.setPosition(arena_pos[0], arena_pos[1]+arena_size[1]/2+arena_size[2]/2, arena_pos[2]-arena_size[2]/2+h/2)
+    wall.setMotionControl(1)
+    sim.add(wall)
+    agxOSG.setDiffuseColor(agxOSG.createVisual(wall, root), agxRender.Color.DarkGray())
+
+    wall = agx.RigidBody( agxCollide.Geometry( agxCollide.Box(arena_size[0]/2, arena_size[2]/2, h/2)))
+    wall.setPosition(arena_pos[0], arena_pos[1]-arena_size[1]/2-arena_size[2]/2, arena_pos[2]-arena_size[2]/2+h/2)
+    wall.setMotionControl(1)
+    sim.add(wall)
+    agxOSG.setDiffuseColor(agxOSG.createVisual(wall, root), agxRender.Color.DarkGray())
+
+    wall = agx.RigidBody( agxCollide.Geometry( agxCollide.Box(arena_size[2]/2, arena_size[1]/2 + arena_size[2], h/2)))
+    wall.setPosition(arena_pos[0]-arena_size[0]/2-arena_size[2]/2, arena_pos[1], arena_pos[2]-arena_size[2]/2+h/2)
+    wall.setMotionControl(1)
+    sim.add(wall)
+    agxOSG.setDiffuseColor(agxOSG.createVisual(wall, root), agxRender.Color.DarkGray())
+
+    wall = agx.RigidBody( agxCollide.Geometry( agxCollide.Box(arena_size[2]/2, arena_size[1]/2 + arena_size[2], h/2)))
+    wall.setPosition(arena_pos[0]+arena_size[0]/2+arena_size[2]/2, arena_pos[1], arena_pos[2]-arena_size[2]/2+h/2)
+    wall.setMotionControl(1)
+    sim.add(wall)
+    agxOSG.setDiffuseColor(agxOSG.createVisual(wall, root), agxRender.Color.DarkGray())
+
+    #                      Arena span in x                                              
+    # obstacles(sim, root, [[arena_pos[0]-arena_size[0], arena_pos[0]+arena_size[0]], [arena_pos[1]-arena_size[1], arena_pos[1]+arena_size[1]], [arena_pos[2], arena_pos[2]+h]])
+
+def obstacles(sim, root, grid):
+    grid_x = grid[0]
+    grid_y = grid[1]
+    grid_z = grid[2]
+    sx = (grid_x[1]-grid_x[0])/2
+    sy = grid_y[1]-grid_y[0]
+    sz = grid_z[1]-grid_z[0]
+
+    boxx = agx.RigidBody( agxCollide.Geometry( agxCollide.Box(sx*0.1, 1, 1)))
+    boxx.setPosition(0,0,1+grid_z[0]+sz*0.8)
+    boxx.setMotionControl(1)
+    sim.add(boxx)
+    agxOSG.setDiffuseColor(agxOSG.createVisual(boxx, root), agxRender.Color.Red())
+
+
+
+def buildBot(sim, root):
+    bot_pos = [0,0,-0.6]
+
+    body_wid = 0.32
+    body_len = 0.6
+    body_hei = 0.16 
+    
+    wheel_rad = 0.07
+    wheel_wid = 0.02
+    wheel_dmp = -0.02
+
+    body = agx.RigidBody( agxCollide.Geometry( agxCollide.Box(body_wid/2, body_len/2, body_hei/2)))
+    body.setPosition(bot_pos[0], bot_pos[1], bot_pos[2] + body_hei/2 + wheel_rad + wheel_dmp )
+    # body.setMotionControl(1)
+    sim.add(body)
+    agxOSG.setDiffuseColor(agxOSG.createVisual(body, root), agxRender.Color.Green())
+
+    wheelLF = agx.RigidBody(agxCollide.Geometry( agxCollide.Cylinder(wheel_rad, wheel_wid)))
+    wheelLF.setPosition(bot_pos[0]-(body_wid/2+wheel_wid/2), bot_pos[1]+(body_len/2-wheel_rad*1.8), bot_pos[2]+wheel_rad)
+    # wheelLF.setMotionControl(1)
+    wheelLF.setRotation(agx.Quat(np.pi/2, agx.Vec3(0,0,1)))
+    sim.add(wheelLF)
+    agxOSG.setDiffuseColor(agxOSG.createVisual(wheelLF, root), agxRender.Color.Red())
+
+    wheelRF = agx.RigidBody(agxCollide.Geometry( agxCollide.Cylinder(wheel_rad, wheel_wid)))
+    wheelRF.setPosition(bot_pos[0]+(body_wid/2+wheel_wid/2), bot_pos[1]+(body_len/2-wheel_rad*1.8), bot_pos[2]+wheel_rad)
+    # wheelRF.setMotionControl(1)
+    wheelRF.setRotation(agx.Quat(np.pi/2, agx.Vec3(0,0,1)))
+    sim.add(wheelRF)
+    agxOSG.setDiffuseColor(agxOSG.createVisual(wheelRF, root), agxRender.Color.Red())
+
+    wheelLB = agx.RigidBody(agxCollide.Geometry( agxCollide.Cylinder(wheel_rad, wheel_wid)))
+    wheelLB.setPosition(bot_pos[0]-(body_wid/2+wheel_wid/2), bot_pos[1]-(body_len/2-wheel_rad*1.8), bot_pos[2]+wheel_rad)
+    # wheelLB.setMotionControl(1)
+    wheelLB.setRotation(agx.Quat(np.pi/2, agx.Vec3(0,0,1)))
+    sim.add(wheelLB)
+    agxOSG.setDiffuseColor(agxOSG.createVisual(wheelLB, root), agxRender.Color.Red())
+
+    wheelRB = agx.RigidBody(agxCollide.Geometry( agxCollide.Cylinder(wheel_rad, wheel_wid)))
+    wheelRB.setPosition(bot_pos[0]+(body_wid/2+wheel_wid/2), bot_pos[1]-(body_len/2-wheel_rad*1.8), bot_pos[2]+wheel_rad)
+    # wheelRB.setMotionControl(1)
+    wheelRB.setRotation(agx.Quat(np.pi/2, agx.Vec3(0,0,1)))
+    sim.add(wheelRB)
+    agxOSG.setDiffuseColor(agxOSG.createVisual(wheelRB, root), agxRender.Color.Red())
+
+    light_rad = 0.02
+    light_dep = 0.01
+
+    headlightL = agx.RigidBody(agxCollide.Geometry( agxCollide.Cylinder(light_rad, light_dep)))
+    headlightL.setPosition( 0.79*body_wid/2, body_len/2+light_dep/2, bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp)
+    # headlightL.setMotionControl(1)
+    # headlightL.setRotation(agx.Quat(np.pi/2, agx.Vec3(0,0,1)))
+    sim.add(headlightL)
+    agxOSG.setDiffuseColor(agxOSG.createVisual(headlightL, root), agxRender.Color.Yellow())
+    hf = agx.HingeFrame()
+    hf.setAxis(agx.Vec3(0,1,0))
+    hf.setCenter(agx.Vec3( 0.79*body_wid/2, body_len/2, bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp ))
+    HLL = agx.Hinge(hf, body, headlightL)
+    sim.add(HLL)
+
+    headlightR = agx.RigidBody(agxCollide.Geometry( agxCollide.Cylinder(light_rad, light_dep)))
+    headlightR.setPosition(-0.79*body_wid/2, body_len/2+light_dep/2, bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp )
+    # headlightR.setMotionControl(1)
+    # headlightL.setRotation(agx.Quat(np.pi/2, agx.Vec3(0,0,1)))
+    sim.add(headlightR)
+    agxOSG.setDiffuseColor(agxOSG.createVisual(headlightR, root), agxRender.Color.Yellow())
+    hf = agx.HingeFrame()
+    hf.setAxis(agx.Vec3(0,1,0))
+    hf.setCenter(agx.Vec3(-0.79*body_wid/2, body_len/2, bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp ))
+    HLR = agx.Hinge(hf, body, headlightR)
+    sim.add(HLR)
+
+
+    light_wid = 0.012
+    light_hei = 0.02
+    light_dep = 0.003
+
+    taillightL = agx.RigidBody(agxCollide.Geometry( agxCollide.Box(light_wid, light_dep, light_hei)))
+    taillightL.setPosition(-0.79*body_wid/2,-(body_len/2+light_dep/2), bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp)
+    # taillightL.setMotionControl(1)
+    # headlightL.setRotation(agx.Quat(np.pi/2, agx.Vec3(0,0,1)))
+    sim.add(taillightL)
+    agxOSG.setDiffuseColor(agxOSG.createVisual(taillightL, root), agxRender.Color.Red())
+    hf = agx.HingeFrame()
+    hf.setAxis(agx.Vec3(0,1,0))
+    hf.setCenter(agx.Vec3(-0.79*body_wid/2,-body_len/2, bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp + light_hei/3))
+    TLL_hi = agx.Hinge(hf, body, taillightL)
+    sim.add(TLL_hi)
+    hf = agx.HingeFrame()
+    hf.setAxis(agx.Vec3(0,1,0))
+    hf.setCenter(agx.Vec3(-0.79*body_wid/2,-body_len/2, bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp - light_hei/3))
+    TLL_low = agx.Hinge(hf, body, taillightL)
+    sim.add(TLL_low)
+
+    taillightR = agx.RigidBody(agxCollide.Geometry( agxCollide.Box(light_wid, light_dep, light_hei)))
+    taillightR.setPosition( 0.79*body_wid/2,-(body_len/2+light_dep/2), bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp)
+    # taillightR.setMotionControl(1)
+    # headlightL.setRotation(agx.Quat(np.pi/2, agx.Vec3(0,0,1)))
+    sim.add(taillightR)
+    agxOSG.setDiffuseColor(agxOSG.createVisual(taillightR, root), agxRender.Color.Red())
+    hf = agx.HingeFrame()
+    hf.setAxis(agx.Vec3(0,1,0))
+    hf.setCenter(agx.Vec3( 0.79*body_wid/2,-body_len/2, bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp + light_hei/3))
+    TLR = agx.Hinge(hf, body, taillightR)
+    sim.add(TLR)
+    hf = agx.HingeFrame()
+    hf.setAxis(agx.Vec3(0,1,0))
+    hf.setCenter(agx.Vec3( 0.79*body_wid/2,-body_len/2, bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp - light_hei/3))
+    TLR = agx.Hinge(hf, body, taillightR)
+    sim.add(TLR)
+
+    windangle = np.pi/4
+    windshield = agx.RigidBody( agxCollide.Geometry( agxCollide.Box(0.9*body_wid/2, 0.005, body_hei/3)))
+    windshield.setPosition(0, body_len/5, bot_pos[2] + body_hei + wheel_rad + wheel_dmp + np.cos(windangle)*body_hei/3)
+    # windshield.setTorque(0,0,100)
+    # windshield.setMotionControl(2)
+    windshield.setRotation(agx.Quat(windangle, agx.Vec3(1,0,0)))
+    sim.add(windshield)
+    agxOSG.setDiffuseColor(agxOSG.createVisual(windshield, root), agxRender.Color.Blue())
+
+
+    hf = agx.HingeFrame()
+    hf.setAxis(agx.Vec3(0,0,1))
+    hf.setCenter(agx.Vec3(-body_wid/3, body_len/5, bot_pos[2] + body_hei + wheel_rad + wheel_dmp))
+    windh1 = agx.Hinge(hf, body, windshield)
+    sim.add(windh1)
+    hf = agx.HingeFrame()
+    hf.setAxis(agx.Vec3(0,0,1))
+    hf.setCenter(agx.Vec3(body_wid/3, body_len/5, bot_pos[2] + body_hei + wheel_rad + wheel_dmp))
+    windh2 = agx.Hinge(hf, body, windshield)
+    sim.add(windh2)
+
+    
+
+    
+    x_ax = agx.Vec3(1,0,0)
+    y_ax = agx.Vec3(0,1,0)
+    z_ax = agx.Vec3(0,0,1)
+
+    hf = agx.HingeFrame()
+    hf.setAxis(agx.Vec3(-1,0,0))
+    hf.setCenter(agx.Vec3(bot_pos[0]-body_wid/2, bot_pos[1]+(body_len/2-wheel_rad*1.8), bot_pos[2]+wheel_rad))
+    axleLF = agx.Hinge(hf, body, wheelLF)
+    sim.add(axleLF)
+
+    hf = agx.HingeFrame()
+    hf.setAxis(agx.Vec3(-1,0,0))
+    hf.setCenter(agx.Vec3(bot_pos[0]-body_wid/2, bot_pos[1]-(body_len/2-wheel_rad*1.8), bot_pos[2]+wheel_rad))
+    axleLB = agx.Hinge(hf, body, wheelLB)
+    sim.add(axleLB)
+
+    hf = agx.HingeFrame()
+    hf.setAxis(agx.Vec3( 1,0,0))
+    hf.setCenter(agx.Vec3(bot_pos[0]+body_wid/2, bot_pos[1]-(body_len/2-wheel_rad*1.8), bot_pos[2]+wheel_rad))
+    axleRB = agx.Hinge(hf, body, wheelRB)
+    sim.add(axleRB)
+    
+    hf = agx.HingeFrame()
+    hf.setAxis(agx.Vec3( 1,0,0))
+    hf.setCenter(agx.Vec3(bot_pos[0]+body_wid/2, bot_pos[1]+(body_len/2-wheel_rad*1.8), bot_pos[2]+wheel_rad))
+    axleRF = agx.Hinge(hf, body, wheelRF)
+    sim.add(axleRF)
+
+    WheelControl = WheelController([wheelLF, wheelRF])
+    sim.add(WheelControl)
+
+
+    # return a pointer to the body
+    return body

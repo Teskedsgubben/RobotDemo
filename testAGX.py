@@ -1,0 +1,2 @@
+import agx
+agx.init()
