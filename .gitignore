@@ -1,3 +1,4 @@
 imageCapture
 .vscode
 __pycache__
+*_local*
