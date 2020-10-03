@@ -1,8 +1,3 @@
-'''
-
-This script is a startup template for scripting with the AGX Dynamics Python API
-
-'''
 import sys
 
 try:
@@ -22,46 +17,6 @@ import time
 import math
 import numpy as np
 
-import src.Components
-
-from tutorials.tutorial_utils import createHelpText
-
-
-# Create a class that is triggered at various steps in the simulation
-class FollowCam(agxSDK.StepEventListener):
-    def __init__(self, app, object_to_follow, distance=9, angle=25):
-        super().__init__(agxSDK.StepEventListener.PRE_COLLIDE+agxSDK.StepEventListener.PRE_STEP+agxSDK.StepEventListener.POST_STEP)
-        self.app = app
-        self.body = object_to_follow
-        self.dist = distance
-        self.angl = np.deg2rad(angle)
-        self.camData = app.getCameraData()
-
-    def preCollide(self, time):
-        return
-        # print("preCollide")
-
-    def pre(self, time):
-        looker = self.body.getPosition()
-        position = -self.body.getVelocity()
-        position.setLength(self.dist)
-        position.set(position.x()*np.cos(self.angl), position.y()*np.cos(self.angl), self.dist*np.sin(self.angl))
-        position = position + looker
-        
-        cameraData                   = self.app.getCameraData()
-        cameraData.eye               = position
-        cameraData.center            = looker
-        cameraData.up                = agx.Vec3( 0, 0, 1 )
-        cameraData.nearClippingPlane = 0.1
-        cameraData.farClippingPlane  = 5000
-        self.app.applyCameraData( cameraData )
-        return
-        # print("pre")
-
-    def post(self, time):
-        return
-        # print("post")
-
 # Controls wheel torque from arrow key inputs. Supports 2 or 4 wheel drive.
 # Wheels to be controlled must come as a list of [left, right, left, right]
 class WheelController(agxSDK.GuiEventListener):
@@ -70,8 +25,8 @@ class WheelController(agxSDK.GuiEventListener):
         super().__init__(agxSDK.GuiEventListener.KEYBOARD)
         self.wheels = wheels
         self.strength = 4
-        self.root = agxPython.getContext().environment.getSceneRoot()
-        app = agxPython.getContext().environment.getApplication()
+        # self.root = agxPython.getContext().environment.getSceneRoot()
+        # app = agxPython.getContext().environment.getApplication()
 
     # Steering function
     def keyboard(self, key, x, y, alt, keydown):
@@ -100,129 +55,11 @@ class WheelController(agxSDK.GuiEventListener):
             return False
         return True
 
-#
-# "main" def that creates the scene
-#
-def buildScene():
-
-    sim = agxPython.getContext().environment.getSimulation()
-    app = agxPython.getContext().environment.getApplication()
-    root = agxPython.getContext().environment.getSceneRoot()
-
-    # body1 = src.Components.MC095()
-    # sim.add(body1)
-    # # Create a visual representation
-    # agxOSG.setDiffuseColor(agxOSG.createVisual(body1, root), agxRender.Color.Red())
-    # # Create a constraint
-    # f1 = agx.Frame()
-    # spring = agx.DistanceJoint(body1, f1, agx.Vec3())
-    # spring.setCompliance(1E-3)
-    # # Add the constraint to the simulation
-    # sim.add(spring)
-
-    
-    buildArena(sim,root)
-    botBody = buildBot(sim, root)
-    
-
-    
-
-    # Setup the initial camera pose. (Can be retrieved using the 'C' button)
-    cameraData                   = app.getCameraData()
-    cameraData.eye               = agx.Vec3( 5.2862330534244251E-01, -3.3026565127091070E+00, 3.6781431908061329E-01 )
-    cameraData.center            = agx.Vec3( -1.0658614570274949E-02, -3.7949085235595703E-03, -3.8335944223217666E-01 )
-    cameraData.up                = agx.Vec3( -4.6478274679073110E-02, 2.1455414637230918E-01, 9.7560560077180092E-01 )
-    cameraData.nearClippingPlane = 0.1
-    cameraData.farClippingPlane  = 5000
-    app.applyCameraData( cameraData )
-
-    # Add my listner to the simulation
-    sim.add(FollowCam(app, botBody))
-    # sim.add(MyGuiListener())
-
-    # createHelpText(sim, app)
-
-def main(args):
-
-    ## Create an application with graphics etc.
-    app = agxOSG.ExampleApplication()
-
-    ## Create a command line parser. sys.executable will point to python executable
-    ## in this case, because getArgumentName(0) needs to match the C argv[0] which
-    ## is the name of the program running
-    argParser = agxIO.ArgumentParser([sys.executable] + args)
-
-    app.addScene(argParser.getArgumentName(1), "buildScene", ord('1'), True)
-
-    ## Call the init method of ExampleApplication
-    ## It will setup the viewer, windows etc.
-    if app.init(argParser):
-        app.run()
-    else:
-        print("An error occurred while initializing ExampleApplication.")
-
-
-## Entry point when this script is loaded with python
-if agxPython.getContext() == None:
-    init = agx.AutoInit()
-    main(sys.argv)
-
-def buildArena(sim, root):
-    arena_size = [8,8,0.2]
-    arena_pos = [0,0,-1]
-    h = 0.7
-
-    floor = agx.RigidBody( agxCollide.Geometry( agxCollide.Box(arena_size[0]/2, arena_size[1]/2, arena_size[2]/2)))
-    floor.setPosition(arena_pos[0], arena_pos[1], arena_pos[2]-arena_size[2]/2)
-    floor.setMotionControl(1)
-    sim.add(floor)
-    agxOSG.setDiffuseColor(agxOSG.createVisual(floor, root), agxRender.Color.Gray())
-
-    wall = agx.RigidBody( agxCollide.Geometry( agxCollide.Box(arena_size[0]/2, arena_size[2]/2, h/2)))
-    wall.setPosition(arena_pos[0], arena_pos[1]+arena_size[1]/2+arena_size[2]/2, arena_pos[2]-arena_size[2]/2+h/2)
-    wall.setMotionControl(1)
-    sim.add(wall)
-    agxOSG.setDiffuseColor(agxOSG.createVisual(wall, root), agxRender.Color.DarkGray())
-
-    wall = agx.RigidBody( agxCollide.Geometry( agxCollide.Box(arena_size[0]/2, arena_size[2]/2, h/2)))
-    wall.setPosition(arena_pos[0], arena_pos[1]-arena_size[1]/2-arena_size[2]/2, arena_pos[2]-arena_size[2]/2+h/2)
-    wall.setMotionControl(1)
-    sim.add(wall)
-    agxOSG.setDiffuseColor(agxOSG.createVisual(wall, root), agxRender.Color.DarkGray())
-
-    wall = agx.RigidBody( agxCollide.Geometry( agxCollide.Box(arena_size[2]/2, arena_size[1]/2 + arena_size[2], h/2)))
-    wall.setPosition(arena_pos[0]-arena_size[0]/2-arena_size[2]/2, arena_pos[1], arena_pos[2]-arena_size[2]/2+h/2)
-    wall.setMotionControl(1)
-    sim.add(wall)
-    agxOSG.setDiffuseColor(agxOSG.createVisual(wall, root), agxRender.Color.DarkGray())
-
-    wall = agx.RigidBody( agxCollide.Geometry( agxCollide.Box(arena_size[2]/2, arena_size[1]/2 + arena_size[2], h/2)))
-    wall.setPosition(arena_pos[0]+arena_size[0]/2+arena_size[2]/2, arena_pos[1], arena_pos[2]-arena_size[2]/2+h/2)
-    wall.setMotionControl(1)
-    sim.add(wall)
-    agxOSG.setDiffuseColor(agxOSG.createVisual(wall, root), agxRender.Color.DarkGray())
-
-    #                      Arena span in x                                              
-    # obstacles(sim, root, [[arena_pos[0]-arena_size[0], arena_pos[0]+arena_size[0]], [arena_pos[1]-arena_size[1], arena_pos[1]+arena_size[1]], [arena_pos[2], arena_pos[2]+h]])
-
-def obstacles(sim, root, grid):
-    grid_x = grid[0]
-    grid_y = grid[1]
-    grid_z = grid[2]
-    sx = (grid_x[1]-grid_x[0])/2
-    sy = grid_y[1]-grid_y[0]
-    sz = grid_z[1]-grid_z[0]
-
-    boxx = agx.RigidBody( agxCollide.Geometry( agxCollide.Box(sx*0.1, 1, 1)))
-    boxx.setPosition(0,0,1+grid_z[0]+sz*0.8)
-    boxx.setMotionControl(1)
-    sim.add(boxx)
-    agxOSG.setDiffuseColor(agxOSG.createVisual(boxx, root), agxRender.Color.Red())
 
 
 
 def buildBot(sim, root):
-    bot_pos = [0,0,-0.6]
+    bot_pos = [0,0,-0.2]
 
     body_wid = 0.32
     body_len = 0.6
@@ -384,7 +221,7 @@ def buildBot(sim, root):
     axleRF = agx.Hinge(hf, body, wheelRF)
     sim.add(axleRF)
 
-    WheelControl = WheelController([wheelLF, wheelRF])
+    WheelControl = WheelController([wheelLF, wheelRF, wheelLB, wheelRB])
     sim.add(WheelControl)
 
 
