@@ -3,14 +3,12 @@
 This script is a startup template for scripting with the AGX Dynamics Python API
 
 '''
-import os
-import time
+import sys
+
 try:
     import agx
 except:
-    os.system("\"C:\Program Files\Algoryx\AGX-2.29.2.0\setup_env.bat\"")
-    time.sleep(5)
-    import agx
+    sys.exit("Could not import AGX, run \"C:\Program Files\Algoryx\AGX-2.29.2.0\setup_env.bat\" in terminal, including citation marks.")
 
 import agxCollide
 import agxOSG
@@ -20,7 +18,7 @@ import agxIO
 import agxModel
 import agxRender
 
-import sys
+import time
 import math
 import numpy as np
 
