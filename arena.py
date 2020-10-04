@@ -129,17 +129,56 @@ def obstacles(sim, root, h):
     pos = [2.35, -2.35, h+dims[2]/2]
     wall_in = addboxx(sim, root, dims, pos)
     dims = [3.2, 0.25, 0.3]
-    pos = [4.8, -3.4, h+dims[2]/2]
+    pos = [4.5, -3.1, h+dims[2]/2]
     wall_out = addboxx(sim, root, dims, pos)
     wall_in.setRotation(agx.Quat(-np.pi/4, agx.Vec3(0,0,1)))
     wall_out.setRotation(agx.Quat(-np.pi/4, agx.Vec3(0,0,1)))
 
-    for i in range(150):
+    # Ballroom balls
+    for i in range(200):
         x = 4.0 + random.random()*2.8
         y = 0.75 - random.random()*2.5
         rad = 0.025 + random.random()*0.075
         pos = agx.Vec3(x, y, h+rad+3*random.random()*rad)
         addball(sim, root, rad, pos, Fixed=False)
+
+    # Bridge room
+    dims = [1.5, 1.8, 0.45]
+    pos = [-1.5, -3.25, h+dims[2]/2]
+    addboxx(sim, root, dims, pos)
+
+    dims = [1.5, 1.8, 0.45]
+    pos = [-4.5, -3.25, h+dims[2]/2]
+    addboxx(sim, root, dims, pos)
+
+    dx = 0.8
+    bot_tilt = 0.0445
+    dims = [dx, 2.5, 0.6]
+    bot_tilt = np.arcsin(0.45/(2.5*4))
+    dif = dims[1]/2*np.cos(bot_tilt)-0.002*np.sin(bot_tilt)
+    dh = 2*np.sin(bot_tilt)*dif
+    for i in range(4):
+        angle = (i+1)*np.pi
+        pos = [2-dx*i, -4.8-0.015*(-1)**i, -0.3+h+(i+1/2)*dh]
+        hip = addboxx(sim, root, dims, pos)
+        hip.setRotation(agx.Quat( bot_tilt, agx.Vec3(1,0,0)))
+        hip.setRotation(hip.getRotation()*agx.Quat(angle, agx.Vec3(0,0,1)))
+        addboxx(sim, root, [2*dx, 0.9, dims[2]], [2-dx*(i+1/2), -4.8-1.7*((-1)**i), -0.3+h+(i+1)*dh])
+
+    addboxx(sim, root, [1.5, 0.5, 0.08], [-3.0, -3.25, h+0.45-0.04])
+
+    addboxx(sim, root, [0.1, 2.5, 0.5], [-6.5, -2.05, h+0.5/2])
+    addboxx(sim, root, [0.1, 2.5, 0.5], [-5.5, -2.05, h+0.5/2])
+
+    hip = addboxx(sim, root, [0.9, 1.5, 0.1], [-6.0, -1.53, h+0.026+np.sin(0.15)*1.5/2])
+    hip.setRotation(agx.Quat(0.15, agx.Vec3(1,0,0)))
+
+    addboxx(sim, root, [0.9, 2.0, 0.2], [-6.0, -2.25, h+0.075])
+    addboxx(sim, root, [1.4, 0.8, 0.2], [-5.8, -3.7, h+0.45-0.1])
+
+    hip = addboxx(sim, root, [0.9, 1.5, 0.1], [-6.0, -3.0, h+0.026+np.sin(0.15)*1.5/2])
+    hip.setRotation(agx.Quat(-0.15, agx.Vec3(1,0,0)))
+    
 
 def seesaw(sim, root, pos, angle, h=0.08):
     d = 0.8
