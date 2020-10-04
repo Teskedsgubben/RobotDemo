@@ -55,6 +55,20 @@ class WheelController(agxSDK.GuiEventListener):
             return False
         return True
 
+class Fjoink(agxSDK.GuiEventListener):
+    '''Wheels must be in a list and in pairs L & R, i.e. [wheel_left, wheel_right]'''
+    def __init__(self, body):
+        super().__init__(agxSDK.GuiEventListener.KEYBOARD)
+        self.body = body
+    def keyboard(self, key, x, y, alt, keydown):
+        if keydown and key == agxSDK.GuiEventListener.KEY_BackSpace:
+            if(self.body.getVelocity().z() < 1E-4):
+                self.body.setVelocity(self.body.getVelocity()+agx.Vec3(0,0,5))
+        else:
+            return False
+        return True
+
+
 
 
 
@@ -222,6 +236,6 @@ def buildBot(sim, root, bot_pos):
     WheelControl = WheelController([wheelLF, wheelRF])
     sim.add(WheelControl)
 
-
+    sim.add(Fjoink(body))
     # return a pointer to the body
     return body
