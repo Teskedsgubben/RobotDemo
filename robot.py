@@ -58,9 +58,7 @@ class WheelController(agxSDK.GuiEventListener):
 
 
 
-def buildBot(sim, root):
-    bot_pos = [0,0,-0.2]
-
+def buildBot(sim, root, bot_pos):
     body_wid = 0.32
     body_len = 0.6
     body_hei = 0.16 
@@ -107,26 +105,26 @@ def buildBot(sim, root):
     light_dep = 0.01
 
     headlightL = agx.RigidBody(agxCollide.Geometry( agxCollide.Cylinder(light_rad, light_dep)))
-    headlightL.setPosition( 0.79*body_wid/2, body_len/2+light_dep/2, bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp)
+    headlightL.setPosition( bot_pos[0] + 0.79*body_wid/2, bot_pos[1] + body_len/2+light_dep/2, bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp)
     # headlightL.setMotionControl(1)
     # headlightL.setRotation(agx.Quat(np.pi/2, agx.Vec3(0,0,1)))
     sim.add(headlightL)
     agxOSG.setDiffuseColor(agxOSG.createVisual(headlightL, root), agxRender.Color.Yellow())
     hf = agx.HingeFrame()
     hf.setAxis(agx.Vec3(0,1,0))
-    hf.setCenter(agx.Vec3( 0.79*body_wid/2, body_len/2, bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp ))
+    hf.setCenter(agx.Vec3( bot_pos[0] + 0.79*body_wid/2, bot_pos[1] + body_len/2, bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp ))
     HLL = agx.Hinge(hf, body, headlightL)
     sim.add(HLL)
 
     headlightR = agx.RigidBody(agxCollide.Geometry( agxCollide.Cylinder(light_rad, light_dep)))
-    headlightR.setPosition(-0.79*body_wid/2, body_len/2+light_dep/2, bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp )
+    headlightR.setPosition(bot_pos[0] -0.79*body_wid/2, bot_pos[1] + body_len/2+light_dep/2, bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp )
     # headlightR.setMotionControl(1)
     # headlightL.setRotation(agx.Quat(np.pi/2, agx.Vec3(0,0,1)))
     sim.add(headlightR)
     agxOSG.setDiffuseColor(agxOSG.createVisual(headlightR, root), agxRender.Color.Yellow())
     hf = agx.HingeFrame()
     hf.setAxis(agx.Vec3(0,1,0))
-    hf.setCenter(agx.Vec3(-0.79*body_wid/2, body_len/2, bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp ))
+    hf.setCenter(agx.Vec3(bot_pos[0] -0.79*body_wid/2, bot_pos[1] + body_len/2, bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp ))
     HLR = agx.Hinge(hf, body, headlightR)
     sim.add(HLR)
 
@@ -136,42 +134,42 @@ def buildBot(sim, root):
     light_dep = 0.003
 
     taillightL = agx.RigidBody(agxCollide.Geometry( agxCollide.Box(light_wid, light_dep, light_hei)))
-    taillightL.setPosition(-0.79*body_wid/2,-(body_len/2+light_dep/2), bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp)
+    taillightL.setPosition(bot_pos[0] -0.79*body_wid/2,bot_pos[1] -(body_len/2+light_dep/2), bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp)
     # taillightL.setMotionControl(1)
     # headlightL.setRotation(agx.Quat(np.pi/2, agx.Vec3(0,0,1)))
     sim.add(taillightL)
     agxOSG.setDiffuseColor(agxOSG.createVisual(taillightL, root), agxRender.Color.Red())
     hf = agx.HingeFrame()
     hf.setAxis(agx.Vec3(0,1,0))
-    hf.setCenter(agx.Vec3(-0.79*body_wid/2,-body_len/2, bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp + light_hei/3))
+    hf.setCenter(agx.Vec3(bot_pos[0] -0.79*body_wid/2, bot_pos[1] -body_len/2, bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp + light_hei/3))
     TLL_hi = agx.Hinge(hf, body, taillightL)
     sim.add(TLL_hi)
     hf = agx.HingeFrame()
     hf.setAxis(agx.Vec3(0,1,0))
-    hf.setCenter(agx.Vec3(-0.79*body_wid/2,-body_len/2, bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp - light_hei/3))
+    hf.setCenter(agx.Vec3(bot_pos[0] -0.79*body_wid/2, bot_pos[1] -body_len/2, bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp - light_hei/3))
     TLL_low = agx.Hinge(hf, body, taillightL)
     sim.add(TLL_low)
 
     taillightR = agx.RigidBody(agxCollide.Geometry( agxCollide.Box(light_wid, light_dep, light_hei)))
-    taillightR.setPosition( 0.79*body_wid/2,-(body_len/2+light_dep/2), bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp)
+    taillightR.setPosition( bot_pos[0] + 0.79*body_wid/2,bot_pos[1] -(body_len/2+light_dep/2), bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp)
     # taillightR.setMotionControl(1)
     # headlightL.setRotation(agx.Quat(np.pi/2, agx.Vec3(0,0,1)))
     sim.add(taillightR)
     agxOSG.setDiffuseColor(agxOSG.createVisual(taillightR, root), agxRender.Color.Red())
     hf = agx.HingeFrame()
     hf.setAxis(agx.Vec3(0,1,0))
-    hf.setCenter(agx.Vec3( 0.79*body_wid/2,-body_len/2, bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp + light_hei/3))
+    hf.setCenter(agx.Vec3( bot_pos[0] + 0.79*body_wid/2,bot_pos[1]-body_len/2, bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp + light_hei/3))
     TLR = agx.Hinge(hf, body, taillightR)
     sim.add(TLR)
     hf = agx.HingeFrame()
     hf.setAxis(agx.Vec3(0,1,0))
-    hf.setCenter(agx.Vec3( 0.79*body_wid/2,-body_len/2, bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp - light_hei/3))
+    hf.setCenter(agx.Vec3( bot_pos[0] + 0.79*body_wid/2,bot_pos[1]-body_len/2, bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp - light_hei/3))
     TLR = agx.Hinge(hf, body, taillightR)
     sim.add(TLR)
 
     windangle = np.pi/4
     windshield = agx.RigidBody( agxCollide.Geometry( agxCollide.Box(0.9*body_wid/2, 0.005, body_hei/3)))
-    windshield.setPosition(0, body_len/5, bot_pos[2] + body_hei + wheel_rad + wheel_dmp + np.cos(windangle)*body_hei/3)
+    windshield.setPosition(bot_pos[0], bot_pos[1]+body_len/5, bot_pos[2] + body_hei + wheel_rad + wheel_dmp + np.cos(windangle)*body_hei/3)
     # windshield.setTorque(0,0,100)
     # windshield.setMotionControl(2)
     windshield.setRotation(agx.Quat(windangle, agx.Vec3(1,0,0)))
@@ -221,7 +219,7 @@ def buildBot(sim, root):
     axleRF = agx.Hinge(hf, body, wheelRF)
     sim.add(axleRF)
 
-    WheelControl = WheelController([wheelLF, wheelRF, wheelLB, wheelRB])
+    WheelControl = WheelController([wheelLF, wheelRF])
     sim.add(WheelControl)
 
 

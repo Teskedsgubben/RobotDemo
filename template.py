@@ -8,7 +8,7 @@ import sys
 try:
     import agx
 except:
-    sys.exit("Could not import AGX, run \"C:\Program Files\Algoryx\AGX-2.29.2.0\setup_env.bat\" in terminal, including citation marks.")
+    sys.exit("Could not import AGX, run \"C:\\Program Files\\Algoryx\\AGX-2.29.2.0\\setup_env.bat\" in terminal, including citation marks.")
 
 import agxCollide
 import agxOSG
@@ -44,19 +44,22 @@ class FollowCam(agxSDK.StepEventListener):
         # print("preCollide")
 
     def pre(self, time):
-        looker = self.body.getPosition()
         position = -self.body.getVelocity()
-        position.setLength(self.dist)
-        position.set(position.x()*np.cos(self.angl), position.y()*np.cos(self.angl), self.dist*np.sin(self.angl))
-        position = position + looker
-        
-        cameraData                   = self.app.getCameraData()
-        cameraData.eye               = position
-        cameraData.center            = looker
-        cameraData.up                = agx.Vec3( 0, 0, 1 )
-        cameraData.nearClippingPlane = 0.1
-        cameraData.farClippingPlane  = 5000
-        self.app.applyCameraData( cameraData )
+        position.set(0.0, 2)
+
+        if(position.length() > 1E-2):
+            looker = self.body.getPosition()
+            position.setLength(self.dist)
+            position.set(position.x()*np.cos(self.angl), position.y()*np.cos(self.angl), self.dist*np.sin(self.angl))
+            position = position + looker     
+
+            cameraData                   = self.app.getCameraData()
+            cameraData.eye               = position
+            cameraData.center            = looker
+            cameraData.up                = agx.Vec3( 0, 0, 1 )
+            cameraData.nearClippingPlane = 0.1
+            cameraData.farClippingPlane  = 5000
+            self.app.applyCameraData( cameraData )
         return
         # print("pre")
 
@@ -86,16 +89,18 @@ def buildScene():
 
     
     arena.buildArena(sim,root)
-    botBody = robot.buildBot(sim, root)
+    bot_pos = [-6,0,-0.2]
+    botBody = robot.buildBot(sim, root, bot_pos)
+    botBody.setVelocity(agx.Vec3( 0, 8E-3, 0))
     
 
     
 
     # Setup the initial camera pose. (Can be retrieved using the 'C' button)
     cameraData                   = app.getCameraData()
-    cameraData.eye               = agx.Vec3( 5.2862330534244251E-01, -3.3026565127091070E+00, 3.6781431908061329E-01 )
-    cameraData.center            = agx.Vec3( -1.0658614570274949E-02, -3.7949085235595703E-03, -3.8335944223217666E-01 )
-    cameraData.up                = agx.Vec3( -4.6478274679073110E-02, 2.1455414637230918E-01, 9.7560560077180092E-01 )
+    cameraData.eye               = agx.Vec3( bot_pos[0] - 0.00323694, bot_pos[1] - 8.14261, bot_pos[2] + 2.73292)
+    cameraData.center            = agx.Vec3( bot_pos[0] + 3.16354e-05, bot_pos[1] + 0.014163, bot_pos[2] - 0.670644)
+    cameraData.up                = agx.Vec3( 0,0,1 )
     cameraData.nearClippingPlane = 0.1
     cameraData.farClippingPlane  = 5000
     app.applyCameraData( cameraData )
