@@ -13,11 +13,47 @@ import agxIO
 import agxModel
 import agxRender
 
-import time
+import time as TIME
 import math
 import numpy as np
 import random
 
+class Timer(agxSDK.ContactEventListener):
+    def __init__(self, trigger_object):
+        super().__init__(agxSDK.ContactEventListener.ALL)
+        self.trigger = trigger_object
+        self.start = TIME.time()
+        self.checkpoints = []
+        self.checks = []
+
+    def addCheckpoint(self, checkpoint_object):
+        self.checkpoints.append(checkpoint_object)
+        self.checks.append(False)
+
+    def impact(self, time, contact):
+        # Check if all checkpoints have been reached
+        complete = True
+        for i in range(len(self.checks)):
+            if(not self.checks[i] and contact.contains(self.checkpoints[i]) >= 0):
+                self.checks[i] = True
+                print('Checkpoint '+str(i+1)+' reached!')
+            if not self.checks[i]:
+                complete = False
+        
+        if(complete and contact.contains(self.trigger) >= 0):
+            if TIME.time() - self.start > 10:
+                timenum = TIME.time() - self.start
+                seconds = str(round(timenum % 60, 2))
+                minutes = round(np.floor(timenum/60))
+                if minutes < 10:
+                    minutes = '0'+str(minutes)
+                else:
+                    minutes = str(minutes)
+                print('Time: '+minutes+':'+seconds)
+            self.start = TIME.time()
+            for i in range(len(self.checks)):
+                self.checks[i] = False
+        return agxSDK.ContactEventListener.KEEP_CONTACT
 
 def buildArena(sim, root):
     width = 14
@@ -52,7 +88,11 @@ def obstacles(sim, root, h):
     #start plattform
     dims = [1.5, 1.5, 0.06]
     pos = [-6, 0, h+dims[2]/2]
-    addboxx(sim, root, dims, pos)
+    startbox = addboxx(sim, root, dims, pos)
+
+    #timer
+    timer = Timer(startbox)
+    sim.add(timer)
 
     dims = [0.1, 1.5, 0.3]
     pos = [-6.75, 0, h+dims[2]/2]
@@ -103,7 +143,7 @@ def obstacles(sim, root, h):
     pos = [-1.15, 0, h+dims[2]/2]
     addboxx(sim, root, dims, pos)
 
-    dims = [2.0, 0.3, 0.4]
+    dims = [2.6, 0.3, 0.4]
     pos = [0, -1.15, h+dims[2]/2]
     addboxx(sim, root, dims, pos)
 
@@ -116,23 +156,47 @@ def obstacles(sim, root, h):
     addboxx(sim, root, dims, pos)
     
     # Seesaw board
-    dims = [2.2, 0.25, 0.3]
+    dims = [2.1, 0.25, 0.3]
     pos = [2.1, 0.4, h+dims[2]/2]
     addboxx(sim, root, dims, pos)
-    seesaw(sim, root, [4,1,h], -0.8*np.pi, h=0.1)
+    seesaw(sim, root, [3.75,0.9,h], -0.85*np.pi, h=0.1, timer=timer)
     dims = [0.5, 3.8, 0.18]
-    pos = [4.8, 3.25, h+dims[2]/2]
+    pos = [4.8, 3.15, h+dims[2]/2]
     addboxx(sim, root, dims, pos)
 
-    # Ballroom wall
-    dims = [3.6, 0.25, 0.3]
-    pos = [2.35, -2.35, h+dims[2]/2]
-    wall_in = addboxx(sim, root, dims, pos)
-    dims = [3.2, 0.25, 0.3]
-    pos = [4.5, -3.1, h+dims[2]/2]
-    wall_out = addboxx(sim, root, dims, pos)
-    wall_in.setRotation(agx.Quat(-np.pi/4, agx.Vec3(0,0,1)))
-    wall_out.setRotation(agx.Quat(-np.pi/4, agx.Vec3(0,0,1)))
+    # Ballroom walls
+    dims = [0.25, 4.3, 0.3]
+    pos = [6.0, 0.0, h+dims[2]/2]
+    addboxx(sim, root, dims, pos)
+
+    dims = [0.25, 1.0, 0.3]
+    pos = [2.1, -1.0, h+dims[2]/2]
+    addboxx(sim, root, dims, pos)
+
+    dims = [0.25, 1.4, 0.3]
+    pos = [3.0, -0.4, h+dims[2]/2]
+    addboxx(sim, root, dims, pos)
+
+    dims = [0.25, 2.4, 0.3]
+    pos = [2.5, -3.0, h+dims[2]/2]
+    addboxx(sim, root, dims, pos)
+
+    dims = [1.1, 0.25, 0.3]
+    pos = [3.1, -3.1, h+dims[2]/2]
+    addboxx(sim, root, dims, pos)
+
+    dims = [0.66, 0.25, 0.3]
+    pos = [2.3, -1.65, h+dims[2]/2]
+    wall_1 = addboxx(sim, root, dims, pos)
+    dims = [2.8, 0.25, 0.3]
+    pos = [3.95, -2.0, h+dims[2]/2]
+    wall_2 = addboxx(sim, root, dims, pos)
+    dims = [3.91, 0.25, 0.3]
+    pos = [4.65, -3.45, h+dims[2]/2]
+    wall_3 = addboxx(sim, root, dims, pos)
+    wall_1.setRotation(agx.Quat(-np.pi/4, agx.Vec3(0,0,1)))
+    wall_2.setRotation(agx.Quat(-np.pi/4, agx.Vec3(0,0,1)))
+    wall_3.setRotation(agx.Quat( np.pi/4, agx.Vec3(0,0,1)))
 
     # Ballroom balls
     for i in range(200):
@@ -142,15 +206,7 @@ def obstacles(sim, root, h):
         pos = agx.Vec3(x, y, h+rad+3*random.random()*rad)
         addball(sim, root, rad, pos, Fixed=False)
 
-    # Bridge room
-    dims = [1.5, 1.8, 0.45]
-    pos = [-1.5, -3.25, h+dims[2]/2]
-    addboxx(sim, root, dims, pos)
-
-    dims = [1.5, 1.8, 0.45]
-    pos = [-4.5, -3.25, h+dims[2]/2]
-    addboxx(sim, root, dims, pos)
-
+    # Climbing ramp
     dx = 0.8
     bot_tilt = 0.0445
     dims = [dx, 2.5, 0.6]
@@ -159,14 +215,37 @@ def obstacles(sim, root, h):
     dh = 2*np.sin(bot_tilt)*dif
     for i in range(4):
         angle = (i+1)*np.pi
-        pos = [2-dx*i, -4.8-0.015*(-1)**i, -0.3+h+(i+1/2)*dh]
+        pos = [2-dx*i, -4.7-0.015*(-1)**i, -0.3+h+(i+1/2)*dh]
         hip = addboxx(sim, root, dims, pos)
         hip.setRotation(agx.Quat( bot_tilt, agx.Vec3(1,0,0)))
         hip.setRotation(hip.getRotation()*agx.Quat(angle, agx.Vec3(0,0,1)))
-        addboxx(sim, root, [2*dx, 0.9, dims[2]], [2-dx*(i+1/2), -4.8-1.7*((-1)**i), -0.3+h+(i+1)*dh])
+        addboxx(sim, root, [2*dx, 1.1, dims[2]], [2-dx*(i+1/2), -4.7-1.8*((-1)**i), -0.3+h+(i+1)*dh])
+    
+    # Bridge boxes
+    dims = [1.5, 1.8, 0.45]
+    pos = [-1.5, -3.25, h+dims[2]/2]
+    addboxx(sim, root, dims, pos)
 
-    addboxx(sim, root, [1.5, 0.5, 0.08], [-3.0, -3.25, h+0.45-0.04])
+    dims = [1.5, 1.8, 0.45]
+    pos = [-4.5, -3.25, h+dims[2]/2]
+    addboxx(sim, root, dims, pos)
+    
+    # Bridge part
+    bridge = addboxx(sim, root, [1.5, 0.5, 0.08], [-3.0, -3.25, h+0.45-0.04])
+    timer.addCheckpoint(bridge)
+    
+    # Swinging ball over bridge
+    rad = 0.4
+    pendulum = addball(sim, root, rad, [-3.0, -3.25, h+0.45+rad+0.01], Fixed=False)
+    pendulum.setVelocity(agx.Vec3(0,5,0))
+    hf = agx.HingeFrame()
+    hf.setAxis(agx.Vec3( 1,0,0))
+    hf.setCenter(agx.Vec3(-3.0, -3.25, 3.0 + h+0.45+rad+0.01))
+    axleP = agx.Hinge(hf, pendulum)
+    sim.add(axleP)
+    # addboxx(sim, root, [1.5, 0.5, 0.08], )
 
+    # final ramp
     addboxx(sim, root, [0.1, 2.5, 0.5], [-6.5, -2.05, h+0.5/2])
     addboxx(sim, root, [0.1, 2.5, 0.5], [-5.5, -2.05, h+0.5/2])
 
@@ -178,9 +257,10 @@ def obstacles(sim, root, h):
 
     hip = addboxx(sim, root, [0.9, 1.5, 0.1], [-6.0, -3.0, h+0.026+np.sin(0.15)*1.5/2])
     hip.setRotation(agx.Quat(-0.15, agx.Vec3(1,0,0)))
+
     
 
-def seesaw(sim, root, pos, angle, h=0.08):
+def seesaw(sim, root, pos, angle, h=0.08, timer=False):
     d = 0.8
     # Sides
     dims = [0.6, 0.15, h*3/2]
@@ -193,6 +273,8 @@ def seesaw(sim, root, pos, angle, h=0.08):
     dims = [d, 0.9, 0.004]
     pos_s = [pos[0]+0.06*np.sin(angle), pos[1]-0.06*np.cos(angle), pos[2]+h]
     board = addboxx(sim, root, dims, pos_s, Fixed=False)
+    if timer:
+        timer.addCheckpoint(board)
 
     sideP.setRotation(agx.Quat(angle, agx.Vec3(0,0,1)))
     sideN.setRotation(agx.Quat(angle, agx.Vec3(0,0,1)))
