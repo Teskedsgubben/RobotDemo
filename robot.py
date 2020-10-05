@@ -17,6 +17,10 @@ import time
 import math
 import numpy as np
 
+# drivetrain can be set to 'FWD', 'RWD' or 'AWD'
+drivetrain = 'FWD'
+
+
 # Controls wheel torque from arrow key inputs. Supports 2 or 4 wheel drive.
 # Wheels to be controlled must come as a list of [left, right, left, right]
 class WheelController(agxSDK.GuiEventListener):
@@ -24,7 +28,7 @@ class WheelController(agxSDK.GuiEventListener):
     def __init__(self, wheels):
         super().__init__(agxSDK.GuiEventListener.KEYBOARD)
         self.wheels = wheels
-        self.strength = 4
+        self.strength = 8/len(wheels)
         # self.root = agxPython.getContext().environment.getSceneRoot()
         # app = agxPython.getContext().environment.getApplication()
 
@@ -233,7 +237,15 @@ def buildBot(sim, root, bot_pos):
     axleRF = agx.Hinge(hf, body, wheelRF)
     sim.add(axleRF)
 
-    WheelControl = WheelController([wheelLF, wheelRF])
+    wheels = [wheelLF, wheelRF] # default FWD
+    if drivetrain == 'FWD':
+        wheels = [wheelLF, wheelRF]
+    elif drivetrain == 'RWD':
+        wheels = [wheelLB, wheelRB]
+    elif drivetrain == 'AWD':
+        wheels = [wheelLF, wheelRF, wheelLB, wheelRB]
+    
+    WheelControl = WheelController(wheels)
     sim.add(WheelControl)
 
     sim.add(Fjoink(body))
