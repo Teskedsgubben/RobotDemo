@@ -9,6 +9,7 @@ try:
     import agx
 except:
     sys.exit("Could not import AGX, run \"C:\\Program Files\\Algoryx\\AGX-2.29.2.0\\setup_env.bat\" in terminal, including citation marks.")
+# "C:\Program Files\Algoryx\AGX-2.29.2.0\setup_env.bat"
 
 import agxCollide
 import agxOSG
@@ -28,6 +29,7 @@ import src.Components
 
 from tutorials.tutorial_utils import createHelpText
 
+players = 1
 
 # Create a class that is triggered at various steps in the simulation
 class FollowCam(agxSDK.StepEventListener):
@@ -87,29 +89,33 @@ def buildScene():
     # # Add the constraint to the simulation
     # sim.add(spring)
 
-    
     arena.buildArena(sim,root)
-    bot_pos = [-6,0,-0.2]
-    botBody = robot.buildBot(sim, root, bot_pos)
-    botBody.setVelocity(agx.Vec3( 0, 8E-3, 0))
-    
+    bot_pos = [-6, 0,-0.2]
+    if players == 2:
+        bot1_pos = [bot_pos[0]-0.35,bot_pos[1],bot_pos[2]]
+        bot2_pos = [bot_pos[0]+0.35,bot_pos[1],bot_pos[2]]
 
-    
+        bot1 = robot.buildBot(sim, root, bot1_pos, controller='Arrows', drivetrain = 'FWD')
+        bot2 = robot.buildBot(sim, root, bot2_pos, controller='Numpad', drivetrain = 'FWD', color=agxRender.Color.Cyan())
 
-    # Setup the initial camera pose. (Can be retrieved using the 'C' button)
-    cameraData                   = app.getCameraData()
-    cameraData.eye               = agx.Vec3( bot_pos[0] - 0.00323694, bot_pos[1] - 8.14261, bot_pos[2] + 2.73292)
-    cameraData.center            = agx.Vec3( bot_pos[0] + 3.16354e-05, bot_pos[1] + 0.014163, bot_pos[2] - 0.670644)
-    cameraData.up                = agx.Vec3( 0,0,1 )
-    cameraData.nearClippingPlane = 0.1
-    cameraData.farClippingPlane  = 5000
-    app.applyCameraData( cameraData )
-
-    # Add my listner to the simulation
-    sim.add(FollowCam(app, botBody))
-    # sim.add(MyGuiListener())
-
-    # createHelpText(sim, app)
+        cameraData                   = app.getCameraData()
+        cameraData.eye               = agx.Vec3( 15, 0, 12)
+        cameraData.center            = agx.Vec3( 2.25, 0, 0)
+        cameraData.up                = agx.Vec3( 0,0,1 )
+        cameraData.nearClippingPlane = 0.1
+        cameraData.farClippingPlane  = 5000
+        app.applyCameraData( cameraData )
+    else:
+        botBody = robot.buildBot(sim, root, bot_pos, controller='Arrows', drivetrain = 'FWD')
+        sim.add(FollowCam(app, botBody))
+        # Setup the initial camera pose. (Can be retrieved using the 'C' button)
+        cameraData                   = app.getCameraData()
+        cameraData.eye               = agx.Vec3( bot_pos[0] - 0.00323694, bot_pos[1] - 8.14261, bot_pos[2] + 2.73292)
+        cameraData.center            = agx.Vec3( bot_pos[0] + 3.16354e-05, bot_pos[1] + 0.014163, bot_pos[2] - 0.670644)
+        cameraData.up                = agx.Vec3( 0,0,1 )
+        cameraData.nearClippingPlane = 0.1
+        cameraData.farClippingPlane  = 5000
+        app.applyCameraData( cameraData )
 
 def main(args):
 

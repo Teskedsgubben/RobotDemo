@@ -159,7 +159,7 @@ def obstacles(sim, root, h):
     dims = [2.1, 0.25, 0.3]
     pos = [2.1, 0.4, h+dims[2]/2]
     addboxx(sim, root, dims, pos)
-    seesaw(sim, root, [3.75,0.9,h], -0.85*np.pi, h=0.1, timer=timer)
+    seesaw(sim, root, [3.75,0.9,h], -0.85*np.pi, h=0.1)
     dims = [0.5, 3.8, 0.18]
     pos = [4.8, 3.15, h+dims[2]/2]
     addboxx(sim, root, dims, pos)
@@ -260,7 +260,7 @@ def obstacles(sim, root, h):
 
     
 
-def seesaw(sim, root, pos, angle, h=0.08, timer=False):
+def seesaw(sim, root, pos, angle, h=0.08):
     d = 0.8
     # Sides
     dims = [0.6, 0.15, h*3/2]
@@ -273,8 +273,6 @@ def seesaw(sim, root, pos, angle, h=0.08, timer=False):
     dims = [d, 0.9, 0.004]
     pos_s = [pos[0]+0.06*np.sin(angle), pos[1]-0.06*np.cos(angle), pos[2]+h]
     board = addboxx(sim, root, dims, pos_s, Fixed=False)
-    if timer:
-        timer.addCheckpoint(board)
 
     sideP.setRotation(agx.Quat(angle, agx.Vec3(0,0,1)))
     sideN.setRotation(agx.Quat(angle, agx.Vec3(0,0,1)))

@@ -17,13 +17,9 @@ import time
 import math
 import numpy as np
 
-# drivetrain can be set to 'FWD', 'RWD' or 'AWD'
-drivetrain = 'FWD'
-
-
 # Controls wheel torque from arrow key inputs. Supports 2 or 4 wheel drive.
 # Wheels to be controlled must come as a list of [left, right, left, right]
-class WheelController(agxSDK.GuiEventListener):
+class WheelControllerArrows(agxSDK.GuiEventListener):
     '''Wheels must be in a list and in pairs L & R, i.e. [wheel_left, wheel_right]'''
     def __init__(self, wheels):
         super().__init__(agxSDK.GuiEventListener.KEYBOARD)
@@ -59,13 +55,57 @@ class WheelController(agxSDK.GuiEventListener):
             return False
         return True
 
+# Controls wheel torque from arrow key inputs. Supports 2 or 4 wheel drive.
+# Wheels to be controlled must come as a list of [left, right, left, right]
+class WheelControllerNumpad(agxSDK.GuiEventListener):
+    '''Wheels must be in a list and in pairs L & R, i.e. [wheel_left, wheel_right]'''
+    def __init__(self, wheels):
+        super().__init__(agxSDK.GuiEventListener.KEYBOARD)
+        self.wheels = wheels
+        self.strength = 8/len(wheels)
+        # self.root = agxPython.getContext().environment.getSceneRoot()
+        # app = agxPython.getContext().environment.getApplication()
+
+    # Steering function
+    def keyboard(self, key, x, y, alt, keydown):
+        if keydown and key == agxSDK.GuiEventListener.KEY_KP_4:
+            # Turn left
+            for i in range(0, len(self.wheels), 2):
+                self.wheels[i+1].addLocalTorque(0, self.strength,0)
+                self.wheels[i].addLocalTorque(0, -self.strength/4,0)
+
+        elif keydown and key == agxSDK.GuiEventListener.KEY_KP_6:
+            # Turn right
+            for i in range(0, len(self.wheels), 2):
+                self.wheels[i].addLocalTorque(0, self.strength,0)
+                self.wheels[i+1].addLocalTorque(0, -self.strength/4,0)
+
+        elif keydown and key == agxSDK.GuiEventListener.KEY_KP_2:
+            # Back up
+            for wheel in self.wheels:
+                wheel.addLocalTorque(0,-self.strength/2,0)
+
+        elif keydown and key == agxSDK.GuiEventListener.KEY_KP_8:
+            # Gain speed
+            for wheel in self.wheels:
+                wheel.addLocalTorque(0, self.strength,0)
+        else:
+            return False
+        return True
+
 class Fjoink(agxSDK.GuiEventListener):
     '''Wheels must be in a list and in pairs L & R, i.e. [wheel_left, wheel_right]'''
     def __init__(self, body):
         super().__init__(agxSDK.GuiEventListener.KEYBOARD)
         self.body = body
+        self.hopper = agxSDK.GuiEventListener.KEY_Page_Down
+
+    def setHopper(self, hopper):
+        self.hopper = hopper
+        return self
+
     def keyboard(self, key, x, y, alt, keydown):
-        if keydown and key == agxSDK.GuiEventListener.KEY_BackSpace:
+        if keydown and key == self.hopper:
             if(self.body.getVelocity().z() < 1E-4):
                 self.body.setVelocity(self.body.getVelocity()+agx.Vec3(0,0,5))
         else:
@@ -76,7 +116,7 @@ class Fjoink(agxSDK.GuiEventListener):
 
 
 
-def buildBot(sim, root, bot_pos):
+def buildBot(sim, root, bot_pos, controller='Arrows', drivetrain = 'FWD', color=agxRender.Color.Green()):
     body_wid = 0.32
     body_len = 0.6
     body_hei = 0.16 
@@ -89,7 +129,7 @@ def buildBot(sim, root, bot_pos):
     body.setPosition(bot_pos[0], bot_pos[1], bot_pos[2] + body_hei/2 + wheel_rad + wheel_dmp )
     # body.setMotionControl(1)
     sim.add(body)
-    agxOSG.setDiffuseColor(agxOSG.createVisual(body, root), agxRender.Color.Green())
+    agxOSG.setDiffuseColor(agxOSG.createVisual(body, root), color)
 
     wheelLF = agx.RigidBody(agxCollide.Geometry( agxCollide.Cylinder(wheel_rad, wheel_wid)))
     wheelLF.setPosition(bot_pos[0]-(body_wid/2+wheel_wid/2), bot_pos[1]+(body_len/2-wheel_rad*1.8), bot_pos[2]+wheel_rad)
@@ -245,9 +285,12 @@ def buildBot(sim, root, bot_pos):
     elif drivetrain == 'AWD':
         wheels = [wheelLF, wheelRF, wheelLB, wheelRB]
     
-    WheelControl = WheelController(wheels)
-    sim.add(WheelControl)
+    if controller == 'Numpad':
+        sim.add(WheelControllerNumpad(wheels))
+        sim.add(Fjoink(body).setHopper(agxSDK.GuiEventListener.KEY_KP_Subtract))
+    else:
+        sim.add(WheelControllerArrows(wheels))
+        sim.add(Fjoink(body))
 
-    sim.add(Fjoink(body))
     # return a pointer to the body
     return body
