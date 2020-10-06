@@ -141,28 +141,32 @@ def buildBot(sim, root, bot_pos, controller='Arrows', drivetrain = 'FWD', color=
     # wheelLF.setMotionControl(1)
     wheelLF.setRotation(agx.Quat(np.pi/2, agx.Vec3(0,0,1)))
     sim.add(wheelLF)
-    agxOSG.setDiffuseColor(agxOSG.createVisual(wheelLF, root), agxRender.Color.Red())
+    # agxOSG.setDiffuseColor(agxOSG.createVisual(wheelLF, root), agxRender.Color.Red())
 
     wheelRF = agx.RigidBody(agxCollide.Geometry( agxCollide.Cylinder(wheel_rad, wheel_wid)))
     wheelRF.setPosition(bot_pos[0]+(body_wid/2+wheel_wid/2), bot_pos[1]+(body_len/2-wheel_rad*1.8), bot_pos[2]+wheel_rad)
     # wheelRF.setMotionControl(1)
     wheelRF.setRotation(agx.Quat(np.pi/2, agx.Vec3(0,0,1)))
     sim.add(wheelRF)
-    agxOSG.setDiffuseColor(agxOSG.createVisual(wheelRF, root), agxRender.Color.Red())
+    # agxOSG.setDiffuseColor(agxOSG.createVisual(wheelRF, root), agxRender.Color.Red())
 
     wheelLB = agx.RigidBody(agxCollide.Geometry( agxCollide.Cylinder(wheel_rad, wheel_wid)))
     wheelLB.setPosition(bot_pos[0]-(body_wid/2+wheel_wid/2), bot_pos[1]-(body_len/2-wheel_rad*1.8), bot_pos[2]+wheel_rad)
     # wheelLB.setMotionControl(1)
     wheelLB.setRotation(agx.Quat(np.pi/2, agx.Vec3(0,0,1)))
     sim.add(wheelLB)
-    agxOSG.setDiffuseColor(agxOSG.createVisual(wheelLB, root), agxRender.Color.Red())
+    # agxOSG.setDiffuseColor(agxOSG.createVisual(wheelLB, root), agxRender.Color.Red())
 
     wheelRB = agx.RigidBody(agxCollide.Geometry( agxCollide.Cylinder(wheel_rad, wheel_wid)))
     wheelRB.setPosition(bot_pos[0]+(body_wid/2+wheel_wid/2), bot_pos[1]-(body_len/2-wheel_rad*1.8), bot_pos[2]+wheel_rad)
     # wheelRB.setMotionControl(1)
     wheelRB.setRotation(agx.Quat(np.pi/2, agx.Vec3(0,0,1)))
     sim.add(wheelRB)
-    agxOSG.setDiffuseColor(agxOSG.createVisual(wheelRB, root), agxRender.Color.Red())
+    # agxOSG.setDiffuseColor(agxOSG.createVisual(wheelRB, root), agxRender.Color.Red())
+
+    for wheel in [wheelLB, wheelLF, wheelRB, wheelRF]:
+        vis_body = agxOSG.createVisual(wheel, root)
+        agxOSG.setTexture(vis_body, 'tire.png', True, agxOSG.DIFFUSE_TEXTURE, 1.0, 1.0)
 
     light_rad = 0.02
     light_dep = 0.01
@@ -172,7 +176,7 @@ def buildBot(sim, root, bot_pos, controller='Arrows', drivetrain = 'FWD', color=
     # headlightL.setMotionControl(1)
     # headlightL.setRotation(agx.Quat(np.pi/2, agx.Vec3(0,0,1)))
     sim.add(headlightL)
-    agxOSG.setDiffuseColor(agxOSG.createVisual(headlightL, root), agxRender.Color.Yellow())
+    agxOSG.setTexture(agxOSG.createVisual(headlightL, root), 'light.png', True, agxOSG.DIFFUSE_TEXTURE, 1.0, 1.0)
     hf = agx.HingeFrame()
     hf.setAxis(agx.Vec3(0,1,0))
     hf.setCenter(agx.Vec3( bot_pos[0] + 0.79*body_wid/2, bot_pos[1] + body_len/2, bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp ))
@@ -184,7 +188,7 @@ def buildBot(sim, root, bot_pos, controller='Arrows', drivetrain = 'FWD', color=
     # headlightR.setMotionControl(1)
     # headlightL.setRotation(agx.Quat(np.pi/2, agx.Vec3(0,0,1)))
     sim.add(headlightR)
-    agxOSG.setDiffuseColor(agxOSG.createVisual(headlightR, root), agxRender.Color.Yellow())
+    agxOSG.setTexture(agxOSG.createVisual(headlightR, root), 'light.png', True, agxOSG.DIFFUSE_TEXTURE, 1.0, 1.0)
     hf = agx.HingeFrame()
     hf.setAxis(agx.Vec3(0,1,0))
     hf.setCenter(agx.Vec3(bot_pos[0] -0.79*body_wid/2, bot_pos[1] + body_len/2, bot_pos[2] + 0.7*body_hei + wheel_rad + wheel_dmp ))
@@ -237,7 +241,7 @@ def buildBot(sim, root, bot_pos, controller='Arrows', drivetrain = 'FWD', color=
     # windshield.setMotionControl(2)
     windshield.setRotation(agx.Quat(windangle, agx.Vec3(1,0,0)))
     sim.add(windshield)
-    agxOSG.setDiffuseColor(agxOSG.createVisual(windshield, root), agxRender.Color.Blue())
+    agxOSG.setTexture(agxOSG.createVisual(windshield, root), 'windshield.jpg', True, agxOSG.DIFFUSE_TEXTURE, 1.0, 1.0)
 
 
     hf = agx.HingeFrame()
