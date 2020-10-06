@@ -49,35 +49,45 @@ class FollowCam(agxSDK.StepEventListener):
         self.body = object_to_follow
         self.dist = distance
         self.angl = np.deg2rad(angle)
-        self.camData = app.getCameraData()
+        
+        self.relative_position = self.dist*agx.Vec3(0,-np.cos(self.angl), np.sin(self.angl))
+        self.looker = self.body.getPosition()
+        self.position = self.relative_position + self.looker 
+        self.updateCamera()
 
     def preCollide(self, time):
         return
-        # print("preCollide")
 
     def pre(self, time):
-        position = -self.body.getVelocity()
-        position.set(0.0, 2)
+        relative_position = -self.body.getVelocity()
+        relative_position.set(0.0, 2)
 
-        if(position.length() > 1E-2):
-            looker = self.body.getPosition()
-            position.setLength(self.dist)
-            position.set(position.x()*np.cos(self.angl), position.y()*np.cos(self.angl), self.dist*np.sin(self.angl))
-            position = position + looker     
+        if(relative_position.length() > 1E-2):
+            relative_position.setLength(self.dist)
+            relative_position.set(relative_position.x()*np.cos(self.angl), relative_position.y()*np.cos(self.angl), self.dist*np.sin(self.angl))
+            
+            relative_position = self.relative_position + relative_position/60
+            relative_position.setLength(self.dist)
+            relative_position.set(relative_position.x()*np.cos(self.angl), relative_position.y()*np.cos(self.angl), self.dist*np.sin(self.angl))
 
-            cameraData                   = self.app.getCameraData()
-            cameraData.eye               = position
-            cameraData.center            = looker
-            cameraData.up                = agx.Vec3( 0, 0, 1 )
-            cameraData.nearClippingPlane = 0.1
-            cameraData.farClippingPlane  = 5000
-            self.app.applyCameraData( cameraData )
+            self.relative_position = relative_position
+            self.looker = self.body.getPosition()
+            self.position = self.relative_position + self.looker 
+
+            self.updateCamera()
         return
-        # print("pre")
+    
+    def updateCamera(self):
+        cameraData                   = self.app.getCameraData()
+        cameraData.eye               = self.position
+        cameraData.center            = self.looker
+        cameraData.up                = agx.Vec3( 0, 0, 1 )
+        cameraData.nearClippingPlane = 0.1
+        cameraData.farClippingPlane  = 5000
+        self.app.applyCameraData( cameraData )
 
     def post(self, time):
         return
-        # print("post")
 
 #
 # "main" def that creates the scene
@@ -116,16 +126,8 @@ def buildScene():
         cameraData.farClippingPlane  = 5000
         app.applyCameraData( cameraData )
     else:
-        botBody = robot.buildBot(sim, root, bot_pos, controller='Arrows', drivetrain = 'FWD')
+        botBody = robot.buildBot(sim, root, bot_pos, controller='Arrows', drivetrain = 'AWD')
         sim.add(FollowCam(app, botBody))
-        # Setup the initial camera pose. (Can be retrieved using the 'C' button)
-        cameraData                   = app.getCameraData()
-        cameraData.eye               = agx.Vec3( bot_pos[0] - 0.00323694, bot_pos[1] - 8.14261, bot_pos[2] + 2.73292)
-        cameraData.center            = agx.Vec3( bot_pos[0] + 3.16354e-05, bot_pos[1] + 0.014163, bot_pos[2] - 0.670644)
-        cameraData.up                = agx.Vec3( 0,0,1 )
-        cameraData.nearClippingPlane = 0.1
-        cameraData.farClippingPlane  = 5000
-        app.applyCameraData( cameraData )
 
 def main(args):
 
