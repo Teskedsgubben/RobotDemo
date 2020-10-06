@@ -11,6 +11,16 @@ except:
     sys.exit("Could not import AGX, run \"C:\\Program Files\\Algoryx\\AGX-2.29.2.0\\setup_env.bat\" in terminal, including citation marks.")
 # "C:\Program Files\Algoryx\AGX-2.29.2.0\setup_env.bat"
 
+# To add agx to pylint, for autocompleting functions and removing warnings:
+# Open the .vscode directory
+# Open the settings.json file in the editor
+# Add:
+#     "python.autoComplete.extraPaths": [
+#         "C:/Program Files/Algoryx/AGX-2.29.2.0/bin/x64/agxpy"
+#     ],
+# to the bottom row, above the }. 
+# Change the line if your AGX install directory is different.
+
 import agxCollide
 import agxOSG
 import agxSDK
