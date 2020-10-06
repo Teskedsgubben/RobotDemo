@@ -135,9 +135,15 @@ def obstacles(sim, root, h):
         addboxx(sim, root, dims, pos)
     
     # Pole in the middle with walls around
-    dims = [0.5, 0.5, 1.2]
-    pos = [0, 0, h+dims[2]/2]
-    addboxx(sim, root, dims, pos)
+    dims = [0.28, 1.4]
+    pos = [0, 0, h+dims[1]/2]
+    can = addcylinder(sim, root, dims, pos, texture='schrodbull.png')
+    can.setRotation(agx.Quat(np.pi/2, agx.Vec3(1,0,0)))
+    pos = [0, 0, h+dims[1]]
+    dims = [0.28, 0.025]
+    pos[2] = pos[2] + dims[1]/2
+    lid = addcylinder(sim, root, dims, pos, texture='sodacan_lid.png')
+    lid.setRotation(agx.Quat(np.pi/2, agx.Vec3(1,0,0)))
 
     dims = [0.3, 2.0, 0.4]
     pos = [-1.15, 0, h+dims[2]/2]
@@ -321,6 +327,22 @@ def addboxx(sim, root, dims, pos, Fixed=True, color = agxRender.Color.Red()):
     sim.add(boxx)
     agxOSG.setDiffuseColor(agxOSG.createVisual(boxx, root), color)
     return boxx
+
+def addcylinder(sim, root, dims, pos, Fixed=True, color = agxRender.Color.Red(), texture=False):
+    if type(pos) == type([]):
+        pos = agx.Vec3(pos[0], pos[1], pos[2])
+    cyl = agx.RigidBody( agxCollide.Geometry( agxCollide.Cylinder(dims[0], dims[1])))
+    cyl.setPosition(pos)
+    if(Fixed):
+        cyl.setMotionControl(1)
+    sim.add(cyl)
+    vis_body = agxOSG.createVisual(cyl, root)
+    if texture:
+        agxOSG.setTexture(vis_body, texture, True, agxOSG.DIFFUSE_TEXTURE, 1.0, 1.0)
+    else:
+        agxOSG.setDiffuseColor(vis_body, color)
+    
+    return cyl
 
 def addball(sim, root, rad, pos, Fixed=True):
     if type(pos) == type([]):

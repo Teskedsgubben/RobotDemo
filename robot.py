@@ -116,7 +116,7 @@ class Fjoink(agxSDK.GuiEventListener):
 
 
 
-def buildBot(sim, root, bot_pos, controller='Arrows', drivetrain = 'FWD', color=agxRender.Color.Green()):
+def buildBot(sim, root, bot_pos, controller='Arrows', drivetrain = 'FWD', color=False):
     body_wid = 0.32
     body_len = 0.6
     body_hei = 0.16 
@@ -128,8 +128,13 @@ def buildBot(sim, root, bot_pos, controller='Arrows', drivetrain = 'FWD', color=
     body = agx.RigidBody( agxCollide.Geometry( agxCollide.Box(body_wid/2, body_len/2, body_hei/2)))
     body.setPosition(bot_pos[0], bot_pos[1], bot_pos[2] + body_hei/2 + wheel_rad + wheel_dmp )
     # body.setMotionControl(1)
+    body.setRotation(agx.Quat(np.pi, agx.Vec3(0,0,1)))
     sim.add(body)
-    agxOSG.setDiffuseColor(agxOSG.createVisual(body, root), color)
+    vis_body = agxOSG.createVisual(body, root)
+    if color:
+        agxOSG.setDiffuseColor(vis_body, color)
+    else:
+        agxOSG.setTexture(vis_body, 'flames.png', True, agxOSG.DIFFUSE_TEXTURE, 1.0, 1.0)
 
     wheelLF = agx.RigidBody(agxCollide.Geometry( agxCollide.Cylinder(wheel_rad, wheel_wid)))
     wheelLF.setPosition(bot_pos[0]-(body_wid/2+wheel_wid/2), bot_pos[1]+(body_len/2-wheel_rad*1.8), bot_pos[2]+wheel_rad)

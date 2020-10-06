@@ -126,7 +126,7 @@ def buildScene():
         cameraData.farClippingPlane  = 5000
         app.applyCameraData( cameraData )
     else:
-        botBody = robot.buildBot(sim, root, bot_pos, controller='Arrows', drivetrain = 'AWD')
+        botBody = robot.buildBot(sim, root, bot_pos, controller='Arrows', drivetrain = 'FWD')
         sim.add(FollowCam(app, botBody))
 
 def main(args):
